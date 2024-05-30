@@ -1,23 +1,28 @@
 <template>
-  <v-app>
-    <v-main>
-      <HelloWorld/>
-    </v-main>
-  </v-app>
+  <RouterView />
 </template>
 
-<script>
-import HelloWorld from './components/HelloWorld.vue'
+<script setup>
+import { onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { onAuthStateChanged } from "firebase/auth";
+import getFirebaseAuth from "@/composables/useAuth";
+import { awaitUser } from "@/composables/useUser";
+import { loadCurrentCompany } from "@/composables/useCurrentCompany";
 
-export default {
-  name: 'App',
+const route = useRoute();
+const router = useRouter();
 
-  components: {
-    HelloWorld,
-  },
-
-  data: () => ({
-    //
-  }),
-}
+onMounted(() => {
+  const auth = getFirebaseAuth();
+  onAuthStateChanged(auth, (user) => {
+    if (user) awaitUser();
+    if (user) loadCurrentCompany();
+    if (user && route.name === "login") {
+      router.push({ name: "home" });
+    } else if (!user && route.name !== "login") {
+      router.push({ name: "login" });
+    }
+  });
+});
 </script>

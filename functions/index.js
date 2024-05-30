@@ -1,9 +1,18 @@
 const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+admin.initializeApp();
 
-// // Create and deploy your first functions
-// // https://firebase.google.com/docs/functions/get-started
-//
-exports.helloWorld = functions.https.onRequest((_request, response) => {
-  functions.logger.info("Hello logs!", {structuredData: true});
-  response.send("Hello from Firebase!");
+exports.addUser = functions.https.onCall((data, context) => {
+  return admin
+      .auth()
+      .createUser({
+        email: data.email,
+        password: data.password,
+      })
+      .then((userRecord) => {
+        return {userId: userRecord.uid};
+      })
+      .catch((error) => {
+        throw new functions.https.HttpsError("internal", error.message);
+      });
 });
