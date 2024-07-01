@@ -28,11 +28,32 @@
         :to="{ name: 'companies' }"
       ></v-list-item>
       <v-list-item
-        v-if="currentUser && [UserRol.SUPER_ADMIN, UserRol.ADMIN].includes(currentUser.rol) && currentCompany"
+        v-if="currentUser && currentCompany && [UserRol.SUPER_ADMIN, UserRol.ADMIN].includes(currentUser.rol)"
         prepend-icon="mdi-account-group"
-        title="Usuarios"
-        value="Usuarios"
-        :to="{ name: 'users' }"
+        title="Clientes"
+        value="Clientes"
+        :to="{ name: 'clients' }"
+      ></v-list-item>
+      <!-- <v-list-item
+        v-if="currentUser && currentCompany"
+        prepend-icon="mdi-motorbike"
+        title="Motos"
+        value="Motos"
+        :to="{ name: 'motorcycles' }"
+      ></v-list-item> -->
+      <v-list-item
+        v-if="currentUser && currentCompany"
+        prepend-icon="mdi-routes"
+        title="Rutas"
+        value="Rutas"
+        :to="{ name: 'routes' }"
+      ></v-list-item>
+      <v-list-item
+        v-if="currentUser && currentCompany && [UserRol.SUPER_ADMIN, UserRol.ADMIN].includes(currentUser.rol)"
+        prepend-icon="mdi-cash-multiple"
+        title="Prestamos"
+        value="Prestamos"
+        :to="{ name: 'loans' }"
       ></v-list-item>
       <!-- <v-list-item
         v-if="currentUser && [UserRol.SUPER_ADMIN, UserRol.ADMIN].includes(currentUser.rol) && currentBusiness"

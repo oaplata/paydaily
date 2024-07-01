@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: phpmyadmin
+    restart: always
+    ports:
+      - '8080:80'
+    environment:
+      PMA_HOST: 167.71.177.185
+      PMA_PORT: 3306
+      PMA_USER: 1793cdfe-1b00-4dc3-8577-b770b20cf25e
+      PMA_PASSWORD: e4ad1001-c97a-4ef2-8f3b-831d1bb0e93d
+      PMA_ABSOLUTE_URI: http://localhost:8080/

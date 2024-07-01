@@ -1,22 +1,27 @@
 <!-- eslint-disable vue/valid-v-slot -->
 <template>
   <div class="view">
-    <h1 class="mb-2">Usuarios</h1>
-    <v-btn :to="{ name: 'user-create' }" color="primary" class="mb-4">Nuevo Usuario</v-btn>
+    <h1 class="mb-2">Rutas</h1>
+    <v-btn :to="{ name: 'route-create' }" color="primary" class="mb-4"
+      >Nueva Ruta</v-btn
+    >
     <v-card :loading="loading">
-      <v-data-table :items="users" :headers="headers">
+      <v-data-table :items="items" :headers="headers">
         <template v-slot:item.state="{ value }">
           <v-chip :color="getStateColor(value)">
             {{ getStateName(value) }}
           </v-chip>
         </template>
-        <template v-slot:item.rol="{ value }">
-          {{ getRolName(value) }}
-        </template>
         <template v-slot:item.actions="{ item }">
           <router-link
             class="mr-2"
-            :to="{ name: 'user-edit', params: { id: getItemId(item) } }"
+            :to="{ name: 'route-path', params: { id: getItemId(item) } }"
+          >
+            <v-icon color="green">mdi-map-marker-path</v-icon>
+          </router-link>
+          <router-link
+            class="mr-2"
+            :to="{ name: 'route-edit', params: { id: getItemId(item) } }"
           >
             <v-icon color="orange">mdi-pencil</v-icon>
           </router-link>
@@ -26,10 +31,10 @@
             </template>
 
             <template v-slot:default="{ isActive }">
-              <v-card title="Eliminar usuario">
+              <v-card title="Eliminar cliente">
                 <v-card-text>
                   <p>
-                    Esta seguro que desea elminar el usuario
+                    Esta seguro que desea elminar la ruta
                     <b>{{ item.name }}</b
                     >?
                   </p>
@@ -48,7 +53,7 @@
                     variant="elevated"
                     color="primary"
                     @click="
-                      handlerDeleteUser(getItemId(item));
+                      handlerDelete(getItemId(item));
                       isActive.value = false;
                     "
                   >
@@ -65,8 +70,8 @@
 </template>
 <script setup>
 import { ref, onMounted } from "vue";
-import { getAllUsers, deleteUser } from "@/api/users";
-import { UserState, UserRol } from "@/types/User";
+import { getAllRoutes, deleteRoute } from "@/api/routes";
+import { RouteState } from "@/types/Route";
 import { currentCompany } from "@/composables/useCurrentCompany";
 
 const headers = [
@@ -78,64 +83,62 @@ const headers = [
     key: "name",
   },
   {
-    title: "Rol",
+    title: "Ciudad",
     align: "start",
     sortable: false,
-    key: "rol",
+    key: "city",
   },
   {
-    title: "Correo Electrónico",
+    title: "Cobrador",
     align: "start",
     sortable: false,
-    key: "email",
+    key: "debtCollector",
+  },
+  {
+    title: "Clientes",
+    align: "start",
+    sortable: false,
+    key: "clientsCount",
   },
   { title: "Acciones", key: "actions", sortable: false, width: "150px" },
 ];
 
-const users = ref([]);
+const items = ref([]);
 const loading = ref(false);
 
-const getItemId = (item) => item.id || '___';
+const getItemId = (item) => item.id || "___";
 
 const getStateColor = (state) => {
   const colors = {
-    [UserState.ACTIVE]: "green",
-    [UserState.INACTIVE]: "red",
-    [UserState.BLOCKED]: "black"
+    [RouteState.ACTIVE]: "green",
+    [RouteState.INACTIVE]: "red",
   };
   return colors[state];
 };
 
-const getRolName = (rol) => {
-  const names = {
-    [UserRol.ADMIN]: "Administrador",
-    [UserRol.SUPER_ADMIN]: "Super Administrador",
-    [UserRol.DEBT_COLLECTOR]: "Cobrador",
-    [UserRol.LENDER]: "Prestamista",
-  };
-  return names[rol];
-};
-
 const getStateName = (state) => {
   const names = {
-    [UserState.ACTIVE]: "Activo",
-    [UserState.INACTIVE]: "Inactivo",
-    [UserState.BLOCKED]: "Bloqueado"
+    [RouteState.ACTIVE]: "Activa",
+    [RouteState.INACTIVE]: "Inactiva",
   };
   return names[state];
 };
 
-const handlerDeleteUser = async (id) => {
+const handlerDelete = async (id) => {
   if (loading.value) return;
   loading.value = true;
-  await deleteUser(id);
-  users.value = await getAllUsers(currentCompany.value.id);
+  await deleteRoute({ id, companyId: currentCompany.value.id });
+  items.value = await getAllRoutes({ companyId: currentCompany.value.id });
   loading.value = false;
 };
 
 onMounted(async () => {
   try {
-    users.value = await getAllUsers(currentCompany.value.id);
+    items.value = await getAllRoutes({ companyId: currentCompany.value.id });
+    items.value = items.value.map((item) => ({
+      ...item,
+      clientsCount: item.clients.length,
+    }));
   } catch (error) {
     console.log(error);
   }

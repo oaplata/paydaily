@@ -72,6 +72,67 @@ const routes = [
         name: "user-create",
         component: () => import("@/views/Users/UserFormView.vue"),
       },
+      // clientes
+      {
+        path: "clients",
+        name: "clients",
+        component: () => import("@/views/Clients/ClientsListView.vue"),
+      },
+      {
+        path: "clients/:id",
+        name: "client-edit",
+        component: () => import("@/views/Clients/ClientFormView.vue"),
+      },
+      {
+        path: "clients/create",
+        name: "client-create",
+        component: () => import("@/views/Clients/ClientFormView.vue"),
+      },
+      {
+        path: "motorcycles",
+        name: "motorcycles",
+        component: () => import("@/views/Motorcycles/MotorcyclesListView.vue"),
+      },
+      {
+        path: "motorcycles/:id",
+        name: "motorcycle-edit",
+        component: () => import("@/views/Motorcycles/MotorcycleFormView.vue"),
+      },
+      {
+        path: "motorcycles/create",
+        name: "motorcycle-create",
+        component: () => import("@/views/Motorcycles/MotorcycleFormView.vue"),
+      },
+      {
+        path: "routes",
+        name: "routes",
+        component: () => import("@/views/Routes/RoutesListView.vue"),
+      },
+      {
+        path: "routes/:id",
+        name: "route-edit",
+        component: () => import("@/views/Routes/RouteFormView.vue"),
+      },
+      {
+        path: "routes/create",
+        name: "route-create",
+        component: () => import("@/views/Routes/RouteFormView.vue"),
+      },
+      {
+        path: "routes/path/:id",
+        name: "route-path",
+        component: () => import("@/views/Routes/RoutePathView.vue"),
+      },
+      {
+        path: "loans",
+        name: "loans",
+        component: () => import("@/views/Loans/LoanFormView.vue"),
+      },
+      {
+        path: 'load',
+        name: 'load',
+        component: () => import("@/views/LoadData.vue"),
+      }
     ],
   },
 ];

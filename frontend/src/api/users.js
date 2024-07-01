@@ -9,10 +9,14 @@ import {
   setDoc,
   where,
 } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
 import useFirestore from "@/composables/useFirestore";
+import useFunctions from "@/composables/useFuntions";
 
 const firebaseFirestore = useFirestore();
 const usersCol = collection(firebaseFirestore, "users");
+
+const getUsersBalanceCol = (userId) => collection(firebaseFirestore, `users/${userId}/balances`);
 
 export const getAllUsers = async (companyId) => {
   const usersQuery = query(usersCol, where("companies", "array-contains", companyId), where("isDeleted", "==", false));
@@ -39,7 +43,11 @@ export const createUser = async (user) => {
     password: password,
   };
 
-  console.log(firebaseAuthUser);
+  const createUserAuth = httpsCallable(useFunctions(), "createUser");
+
+  const userAuth = await createUserAuth(firebaseAuthUser);
+
+  console.log(userAuth);
 
   const { id } = await addDoc(usersCol, {
     ...user,
@@ -77,3 +85,35 @@ export const deleteUser = async (id) => {
     { merge: true }
   );
 }
+
+export const addUserBalance = async ({ userId, balance }) => {
+  const col = getUsersBalanceCol(userId);
+
+  const { id } = await addDoc(col, {
+    ...balance,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+    isDeleted: false,
+  });
+
+  const docRef = doc(col, id);
+  await setDoc(docRef, { id: id }, { merge: true });
+  return { id };
+};
+
+const getToday = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+};
+
+export const getUserBalanceToday = async ({ userId }) => {
+  const col = getUsersBalanceCol(userId);
+  const querySnapshot = await getDocs(query(col,
+      where("createdAt", ">=", Timestamp.fromDate(getToday())),
+      where("isDeleted", "==", false)
+  ));
+  return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+};
+
+
