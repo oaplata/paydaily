@@ -99,6 +99,38 @@
                     </td>
                     <td>
                       {{ formatedCurrency(fee.value) }}
+                      <v-dialog max-width="500">
+                        <template v-slot:activator="{ props: activatorProps }">
+                          <v-btn
+                            v-bind="activatorProps"
+                            color="red"
+                            icon="mdi-minus"
+                            variant="text"
+                            size="x-small"
+                          ></v-btn>
+                        </template>
+
+                        <template v-slot:default="{ isActive }">
+                          <v-card title="Eliminar Cuota">
+                            <v-card-text>
+                              <p>
+                                Esta seguro que desea elminar la cuota
+                                <b>{{ formatedCurrency(fee.value) }}</b>?
+                              </p>
+                            </v-card-text>
+
+                            <v-card-actions>
+                              <v-btn text="Borrar" @click="deleteFee(fee); isActive.value = false"></v-btn>
+                              <v-spacer></v-spacer>
+                              <v-btn
+                                text="Cerrar"
+                                @click="isActive.value = false"
+                              ></v-btn>
+                            </v-card-actions>
+                          </v-card>
+                        </template>
+                      </v-dialog>
+                      
                     </td>
                   </tr>
                 </tbody>
@@ -143,7 +175,7 @@
 </template>
 <script setup>
 import { getClientById } from '@/api/clients';
-import { getLoanByClientAndRoute, addLoanFee, updateLoan, getLoanFees, getFeeById } from '@/api/loans';
+import { getLoanByClientAndRoute, addLoanFee, updateLoan, getLoanFees, getFeeById, deleteLoanFee } from '@/api/loans';
 import { addUserBalance } from '@/api/users';
 import { currentCompany } from '@/composables/useCurrentCompany';
 import { formatedCurrency } from '@/utils/currency';
@@ -156,6 +188,7 @@ const emits = defineEmits(["getBalances"]);
 
 const clientId = computed(() => props.client);
 const routeId = computed(() => props.route);
+// eslint-disable-next-line no-unused-vars
 const debtCollectorId = computed(() => props.debtCollectorId);
 
 const client = ref(null);
@@ -163,6 +196,7 @@ const loan = ref(null);
 const feeToPay = ref(0);
 const showFeesValue = ref(false);
 const fees = ref([]);
+const loadingAddFee = ref(false);
 
 const clientName = computed(() => client.value?.name);
 const clientDocumentId = computed(() => client.value?.documentId);
@@ -186,15 +220,19 @@ const showFees = () => {
 const getFees = async () => {
   if (fees.value.length) return;
   fees.value = await getLoanFees({ companyId: currentCompany.value.id, loanId: loan.value.id });
+  fees.value = fees.value.sort((a, b) => new Date(b.createdAt.seconds * 1000 + b.createdAt.nanoseconds / 1000000) - new Date(a.createdAt.seconds * 1000 + a.createdAt.nanoseconds / 1000000));
 }
 
 const addFee = async () => {
+  if (loadingAddFee.value) return;
+  loadingAddFee.value = true;
   const { id: feeId } = await addLoanFee({ companyId: currentCompany.value.id, loanId: loan.value.id, value: feeToPay.value });
   loan.value.charged = Number(loan.value.charged) + Number(feeToPay.value);
   loan.value.remaining = Number(loan.value.remaining) - Number(feeToPay.value);
 
   const fee = await getFeeById({ companyId: currentCompany.value.id, loanId: loan.value.id, feeId: feeId});
   fees.value.push(fee);
+  fees.value = fees.value.sort((a, b) => new Date(b.createdAt.seconds * 1000 + b.createdAt.nanoseconds / 1000000) - new Date(a.createdAt.seconds * 1000 + a.createdAt.nanoseconds / 1000000));
 
   await updateLoan({ companyId: currentCompany.value.id, loanId: loan.value.id, loan: {
     charged: loan.value.charged,
@@ -211,9 +249,35 @@ const addFee = async () => {
       description: `Cobro de cuota de ${clientName.value}`
     }
   });
-
+  loadingAddFee.value = false;
+  feeToPay.value = 0;
   emits('getBalances');
 }
+
+const deleteFee = async (fee) => {
+  await deleteLoanFee({ companyId: currentCompany.value.id, loanId: loan.value.id, feeId: fee.id})
+  loan.value.charged = Number(loan.value.charged) - Number(fee.value);
+  loan.value.remaining = Number(loan.value.remaining) + Number(fee.value);
+  loan.value.state = loan.value.remaining === 0 ? 'paid' : 'active';
+  fees.value = fees.value.filter((f) => f.id !== fee.id);
+  await updateLoan({ companyId: currentCompany.value.id, loanId: loan.value.id, loan: {
+    charged: loan.value.charged,
+    remaining: loan.value.remaining,
+    state: loan.value.state
+  }});
+
+  await addUserBalance({
+    companyId: currentCompany.value.id,
+    userId: debtCollectorId.value,
+    balance: {
+      value: -fee.value,
+      type: 'loanFee',
+      description: `Eliminacion de cuota de ${clientName.value}`
+    }
+  });
+
+  emits('getBalances');
+};
 
 onMounted(async () => {
   client.value = await getClientById({ companyId: currentCompany.value.id, id: clientId.value });

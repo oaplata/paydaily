@@ -5,6 +5,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  deleteDoc,
   query,
   setDoc,
   where,
@@ -53,9 +54,6 @@ export const getLoanByClientAndRoute = async ({ clientId, routeId, companyId }) 
       where("state", "==", "active")
   ));
 
-
-  console.log({ clientId, routeId, companyId })
-
   return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))[0];
 };
 
@@ -74,6 +72,12 @@ export const addLoanFee = async ({ loanId, value, companyId, createdAt }) => {
   const docRef = doc(col, id);
   await setDoc(docRef, { id: id }, { merge: true });
   return { id };
+}
+
+export const deleteLoanFee = async ({ loanId, feeId, companyId }) => {
+  const col = getLoanFeesCol(companyId, loanId);
+  const docRef = doc(col, feeId);
+  await deleteDoc(docRef);
 }
 
 export const getFeeById = async ({ loanId, feeId, companyId }) => {

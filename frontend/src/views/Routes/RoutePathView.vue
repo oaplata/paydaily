@@ -46,7 +46,7 @@
                     </tbody>
                   </v-table>
                 </v-col>
-                <v-col cols="12">
+                <v-col cols="12" v-if="['admin', 'super_admin'].includes(currentUser.rol)">
                   <v-text-field
                     label="Valor"
                     v-model="balanceTosave"
@@ -58,7 +58,7 @@
                   <v-select
                     label="Tipo"
                     variant="outlined"
-                    :items="['Rifa', 'Renovacion', 'Mora', 'Prestamo', 'Gasto']"
+                    :items="['Calle', 'Rifa', 'Renovacion', 'Mora', 'Prestamo', 'Gasto', 'Efectivo']"
                     v-model="balanceTypeToSave"
                   ></v-select>
                   <v-text-field
@@ -91,7 +91,6 @@
           </v-card>
         </template>
       </v-dialog>
-      
     </p>
     <v-divider></v-divider>
     <h3 class="my-2">Clientes: </h3>
@@ -111,6 +110,7 @@ import { addUserBalance, getUserBalanceToday, getUserById } from "@/api/users";
 import { currentCompany } from "@/composables/useCurrentCompany";
 import ClientRouteComponent from "@/components/ClientRouteComponent.vue";
 import { formatedCurrency } from "@/utils/currency";
+import { currentUser } from "@/composables/useUser";
 
 const route = ref(null);
 const balances = ref([]);
@@ -138,7 +138,7 @@ const formattedBalance = computed(() => {
 const saveBalance = async () => {
   let factor = 1;
 
-  if (balanceTypeToSave.value === 'Gasto' || balanceTypeToSave.value === 'Prestamo') {
+  if (balanceTypeToSave.value === 'Gasto' || balanceTypeToSave.value === 'Prestamo' || balanceTypeToSave.value === 'Efectivo') {
     factor = -1;
   }
 

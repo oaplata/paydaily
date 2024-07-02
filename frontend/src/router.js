@@ -128,11 +128,11 @@ const routes = [
         name: "loans",
         component: () => import("@/views/Loans/LoanFormView.vue"),
       },
-      {
-        path: 'load',
-        name: 'load',
-        component: () => import("@/views/LoadData.vue"),
-      }
+      // {
+      //   path: 'load',
+      //   name: 'load',
+      //   component: () => import("@/views/LoadData.vue"),
+      // },
     ],
   },
 ];

@@ -2,11 +2,11 @@
 <template>
   <div class="view">
     <h1 class="mb-2">Rutas</h1>
-    <v-btn :to="{ name: 'route-create' }" color="primary" class="mb-4"
-      >Nueva Ruta</v-btn
-    >
+    <v-btn v-if="['admin', 'super_admin'].includes(currentUser.rol)" :to="{ name: 'route-create' }" color="primary" class="mb-4">
+      Nueva Ruta
+    </v-btn>
     <v-card :loading="loading">
-      <v-data-table :items="items" :headers="headers">
+      <v-data-table :items="displayItems" :headers="headers">
         <template v-slot:item.state="{ value }">
           <v-chip :color="getStateColor(value)">
             {{ getStateName(value) }}
@@ -22,10 +22,11 @@
           <router-link
             class="mr-2"
             :to="{ name: 'route-edit', params: { id: getItemId(item) } }"
+            v-if="['admin', 'super_admin'].includes(currentUser.rol)"
           >
             <v-icon color="orange">mdi-pencil</v-icon>
           </router-link>
-          <v-dialog width="500">
+          <v-dialog width="500" v-if="['admin', 'super_admin'].includes(currentUser.rol)">
             <template v-slot:activator="{ props }">
               <v-icon v-bind="props" color="red">mdi-trash-can</v-icon>
             </template>
@@ -69,10 +70,11 @@
   </div>
 </template>
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { getAllRoutes, deleteRoute } from "@/api/routes";
 import { RouteState } from "@/types/Route";
 import { currentCompany } from "@/composables/useCurrentCompany";
+import { currentUser } from "@/composables/useUser";
 
 const headers = [
   { title: "Estado", key: "state", sortable: false, width: "150px" },
@@ -105,6 +107,11 @@ const headers = [
 
 const items = ref([]);
 const loading = ref(false);
+
+const displayItems = computed(() => {
+  if (['admin', 'super_admin'].includes(currentUser.value.rol)) return items.value;
+  return items.value.filter((item) => item.debtCollector === currentUser.value.id);
+})
 
 const getItemId = (item) => item.id || "___";
 

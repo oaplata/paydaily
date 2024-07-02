@@ -95,7 +95,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
 import { getAllClients } from "@/api/clients";
-import { addUserBalance, getAllUsers } from "@/api/users";
+import { getAllUsers } from "@/api/users";
 import { getRoutesByClientId } from "@/api/routes";
 import { createLoan } from "@/api/loans";
 import { currentCompany } from "@/composables/useCurrentCompany";
@@ -132,7 +132,6 @@ const rules = {
 };
 
 const clientSelected = computed(() => current.value.client);
-const clientSelectedObject = computed(() => clients.value.find(client => client.id === clientSelected.value));
 
 watch(clientSelected, () => {
   if (clientSelected.value) {
@@ -158,15 +157,6 @@ const save = async () => {
   await createLoan({ companyId: currentCompany.value.id, loan: current.value })
   loading.value = false;
 
-  await addUserBalance({
-    userId: current.value.lender,
-    balance: {
-      value: +current.value.amount * -1,
-      type: 'loan',
-      description: `Prestamo a ${clientSelectedObject.value.name}`
-    }
-  });
-
   router.push({ name: 'routes' });
 };
 
@@ -174,6 +164,5 @@ onMounted(() => {
   getAllClients({ companyId: currentCompany.value.id }).then(data => clients.value = data);
   getAllUsers(currentCompany.value.id).then(data => users.value = data);
 });
-
 </script>
 
