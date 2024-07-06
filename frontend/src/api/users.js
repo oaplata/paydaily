@@ -101,6 +101,19 @@ export const addUserBalance = async ({ userId, balance }) => {
   return { id };
 };
 
+export const deleteUserBalance = async ({ userId, id }) => {
+  const col = getUsersBalanceCol(userId);
+  const docRef = doc(col, id);
+  await setDoc(
+    docRef,
+    {
+      isDeleted: true,
+      updatedAt: Timestamp.now(),
+    },
+    { merge: true }
+  );
+};
+
 const getToday = () => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);

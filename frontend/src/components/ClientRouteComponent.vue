@@ -3,8 +3,9 @@
     <template v-slot:activator="{ props: activatorProps }">
       <v-card
         v-bind="activatorProps"
-        :subtitle="clientDocumentId"
+        :subtitle="clientAddress"
         :title="clientName"
+        :color="!loan ? 'grey' : feesToday.length ? 'success' : 'orange-darken-1'"
       >
         <template v-slot:append>
           {{ paidToday }} / {{ loanFee }}
@@ -99,7 +100,7 @@
                     </td>
                     <td>
                       {{ formatedCurrency(fee.value) }}
-                      <v-dialog max-width="500">
+                      <v-dialog max-width="500" v-if="['admin', 'super_admin'].includes(currentUser.rol)">
                         <template v-slot:activator="{ props: activatorProps }">
                           <v-btn
                             v-bind="activatorProps"
@@ -129,8 +130,7 @@
                             </v-card-actions>
                           </v-card>
                         </template>
-                      </v-dialog>
-                      
+                      </v-dialog>   
                     </td>
                   </tr>
                 </tbody>
@@ -152,7 +152,7 @@
             <v-col cols="4">
               <v-btn
                 color="primary"
-                :disabled="+feeToPay <= 0 || +feeToPay > +loan.remaining"
+                :disabled="+feeToPay <= 0 || +feeToPay > +loan.remaining || isDayClose"
                 @click="addFee"
                 icon="mdi-currency-usd"
               ></v-btn>
@@ -175,16 +175,26 @@
 </template>
 <script setup>
 import { getClientById } from '@/api/clients';
-import { getLoanByClientAndRoute, addLoanFee, updateLoan, getLoanFees, getFeeById, deleteLoanFee } from '@/api/loans';
+import {
+  getLoanByClientAndRoute,
+  addLoanFee,
+  updateLoan,
+  getLoanFees,
+  getFeeById,
+  deleteLoanFee,
+  getLoanFeesByDate
+} from '@/api/loans';
 import { addUserBalance } from '@/api/users';
 import { currentCompany } from '@/composables/useCurrentCompany';
+import { currentUser } from '@/composables/useUser';
 import { formatedCurrency } from '@/utils/currency';
 import { formatedDate } from '@/utils/date';
+import { watch } from 'vue';
 import { ref } from 'vue';
 import { computed, onMounted, defineProps, defineEmits } from 'vue';
 
 const props = defineProps(["client", "route", "debtCollectorId"]);
-const emits = defineEmits(["getBalances"]);
+const emits = defineEmits(["getBalances", "update:loan-value", "update:charge-value", "update:remaining-value"]);
 
 const clientId = computed(() => props.client);
 const routeId = computed(() => props.route);
@@ -196,21 +206,36 @@ const loan = ref(null);
 const feeToPay = ref(0);
 const showFeesValue = ref(false);
 const fees = ref([]);
+const feesToday = ref([]);
 const loadingAddFee = ref(false);
 
+const isDayClose = ref(true);
+
 const clientName = computed(() => client.value?.name);
-const clientDocumentId = computed(() => client.value?.documentId);
+// const clientDocumentId = computed(() => client.value?.documentId);
 const clientAddress = computed(() => client.value?.address);
 const clientPhone = computed(() => client.value?.phone);
 const clientJob = computed(() => client.value?.job);
 
-const paidToday = computed(() => formatedCurrency(0));
+const paidToday = computed(() => formatedCurrency(feesToday.value.reduce((acc, fee) => acc + (+fee.value), 0)));
 const loanFee = computed(() => formatedCurrency(loan.value?.feeValue));
 const loanAmount = computed(() => formatedCurrency(loan.value?.amount));
 const loanDate = computed(() => formatedDate(loan.value?.createdAt));
 const loanCardNumber = computed(() => loan.value?.cardNumber);
 const loanCharged = computed(() => formatedCurrency(loan.value?.charged));
 const loanRemaining = computed(() => formatedCurrency(loan.value?.remaining));
+
+watch(loanAmount, () => {
+  emits('update:loan-value', +loan.value?.amount || 0);
+}, { immediate: true });
+
+watch(loanCharged, () => {
+  emits('update:charge-value', +loan.value?.charged || 0);
+}, { immediate: true });
+
+watch(loanRemaining, () => {
+  emits('update:remaining-value', +loan.value?.remaining || 0);
+}, { immediate: true });
 
 const showFees = () => {
   showFeesValue.value = !showFeesValue.value;
@@ -279,8 +304,33 @@ const deleteFee = async (fee) => {
   emits('getBalances');
 };
 
+const validateDayClose = () => {
+  const today = new Date();
+  const hour = today.getHours();
+  isDayClose.value = hour >= 18;
+}
+
+
+
 onMounted(async () => {
+  validateDayClose();
+  setInterval(validateDayClose, 1000 * 60 * 2);
   client.value = await getClientById({ companyId: currentCompany.value.id, id: clientId.value });
   loan.value = await getLoanByClientAndRoute({ companyId: currentCompany.value.id, clientId: clientId.value, routeId: routeId.value });
+
+  if (loan.value) {
+    const startToday = new Date();
+    startToday.setHours(0, 0, 0, 0);
+  
+    const endToday = new Date();
+    endToday.setHours(23, 59, 59, 999);
+  
+    feesToday.value = await getLoanFeesByDate({
+      companyId: currentCompany.value.id,
+      loanId: loan.value.id,
+      startDate: startToday,
+      endDate: endToday,
+    });
+  }
 });
 </script>

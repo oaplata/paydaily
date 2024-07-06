@@ -7,6 +7,17 @@
     <p class="my-2">Cobrador: {{ routeDebtCollector }}</p>
     <v-divider></v-divider>
     <p class="my-2">
+      Prestado: {{ loanValueOnRoute }}
+    </p>
+    <v-divider></v-divider>
+    <p class="my-2">
+      Cobrado: {{ chargeValueOnRoute }}
+    </p>
+    <v-divider></v-divider>
+    <p class="my-2">
+      Pendiente: {{ remainingValueOnRoute }}
+    </p>
+    <p class="my-2">
       Saldo: {{ formattedBalance }}
       <v-dialog max-width="500">
         <template v-slot:activator="{ props: activatorProps }">
@@ -41,6 +52,37 @@
                         </td>
                         <td>
                           {{ b.description }}
+                          <v-dialog max-width="500" v-if="['admin', 'super_admin'].includes(currentUser.rol) && ['Calle', 'Rifa', 'Renovacion', 'Mora', 'Prestamo', 'Gasto', 'Efectivo'].includes(b.type)">
+                            <template v-slot:activator="{ props: activatorProps }">
+                              <v-btn
+                                v-bind="activatorProps"
+                                color="red"
+                                icon="mdi-minus"
+                                variant="text"
+                                size="x-small"
+                              ></v-btn>
+                            </template>
+
+                            <template v-slot:default="{ isActive }">
+                              <v-card title="Eliminar Cuota">
+                                <v-card-text>
+                                  <p>
+                                    Esta seguro que desea elminar el movimiento
+                                    <b>{{ b.description }} {{ formatedCurrency(b.value) }}</b>?
+                                  </p>
+                                </v-card-text>
+
+                                <v-card-actions>
+                                  <v-btn text="Borrar" @click="deleteBalance(b); isActive.value = false"></v-btn>
+                                  <v-spacer></v-spacer>
+                                  <v-btn
+                                    text="Cerrar"
+                                    @click="isActive.value = false"
+                                  ></v-btn>
+                                </v-card-actions>
+                              </v-card>
+                            </template>
+                          </v-dialog>   
                         </td>
                       </tr>
                     </tbody>
@@ -95,8 +137,16 @@
     <v-divider></v-divider>
     <h3 class="my-2">Clientes: </h3>
     <v-divider></v-divider>
-    <template v-for="client of clients" :key="client">
-      <ClientRouteComponent :client="client" :route="routeId" :debtCollectorId="routeDebtCollectorId" @getBalances="getBalances"/>
+    <template v-for="(client, index) of clients" :key="client">
+      <ClientRouteComponent
+        :client="client"
+        :route="routeId"
+        :debtCollectorId="routeDebtCollectorId"
+        @update:loan-value="loanValues[index] = $event"
+        @update:charge-value="chargeValues[index] = $event"
+        @update:remaining-value="remainingValues[index] = $event"
+        @getBalances="getBalances"
+      />
       <div class="my-2"></div>
     </template>
     <!-- <p>{{ route }}</p> -->
@@ -106,7 +156,7 @@
 import { onMounted, ref, computed } from "vue";
 import { useRoute } from "vue-router";
 import { getRouteById } from "@/api/routes";
-import { addUserBalance, getUserBalanceToday, getUserById } from "@/api/users";
+import { addUserBalance, getUserBalanceToday, getUserById, deleteUserBalance } from "@/api/users";
 import { currentCompany } from "@/composables/useCurrentCompany";
 import ClientRouteComponent from "@/components/ClientRouteComponent.vue";
 import { formatedCurrency } from "@/utils/currency";
@@ -114,6 +164,10 @@ import { currentUser } from "@/composables/useUser";
 
 const route = ref(null);
 const balances = ref([]);
+
+const loanValues = ref([]);
+const chargeValues = ref([]);
+const remainingValues = ref([]);
 
 const balanceTosave = ref(0);
 const balanceTypeToSave = ref('');
@@ -160,10 +214,22 @@ const getBalances = async () => {
   balances.value = await getUserBalanceToday({ userId: route.value.debtCollector.id });
 };
 
+const loanValueOnRoute = computed(() => formatedCurrency(loanValues.value.reduce((acc, value) => acc + value, 0)));
+const chargeValueOnRoute = computed(() => formatedCurrency(chargeValues.value.reduce((acc, value) => acc + value, 0)));
+const remainingValueOnRoute = computed(() => formatedCurrency(remainingValues.value.reduce((acc, value) => acc + value, 0)));
+
+const deleteBalance = async (balance) => {
+  deleteUserBalance({ userId: routeDebtCollectorId.value, id: balance.id });
+  getBalances();
+};
+
 onMounted(async () => {
   const id = useRoute().params.id;
   route.value = await getRouteById({ companyId: currentCompany.value.id, id });
   route.value.debtCollector = await getUserById(route.value.debtCollector);
+  loanValues.value = new Array(route.value.clients.length).fill(0);
+  chargeValues.value = new Array(route.value.clients.length).fill(0);
+  remainingValues.value = new Array(route.value.clients.length).fill(0);
   getBalances();
   // route.value.clients = await Promise.all(route.value.clients.map((client) => getClientById({ companyId: currentCompany.value.id, id: client })));
 });

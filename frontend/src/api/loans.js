@@ -95,3 +95,13 @@ export const getLoanFees = async ({ loanId, companyId }) => {
 
   return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 }
+
+export const getLoanFeesByDate = async ({ loanId, companyId, startDate, endDate }) => {
+  const col = getLoanFeesCol(companyId, loanId);
+  const querySnapshot = await getDocs(query(col, 
+    where("createdAt", ">=", Timestamp.fromDate(startDate)),
+    where("createdAt", "<=", Timestamp.fromDate(endDate)),
+  ));
+
+  return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+};
