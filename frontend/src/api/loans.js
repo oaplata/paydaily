@@ -36,6 +36,14 @@ export const createLoan = async ({ loan, companyId }) => {
   return id;
 };
 
+export const getLoanById = async ({ loanId, companyId }) => {
+  const col = getLoansCol(companyId);
+  const docRef = doc(col, loanId);
+  const docSnap = await getDoc(docRef);
+
+  return docSnap.data();
+};
+
 export const updateLoan = async ({ loanId, loan, companyId }) => {
   const col = getLoansCol(companyId);
   const docRef = doc(col, loanId);

@@ -162,12 +162,9 @@
 
 
         <v-card-actions>
+          <v-btn v-if="['admin', 'super_admin'].includes(currentUser.rol)" text="Editar" :to="{ name: 'loans-edit', params: { id: loan.id }}"/>
           <v-spacer></v-spacer>
-
-          <v-btn
-            text="Cerrar"
-            @click="isActive.value = false"
-          ></v-btn>
+          <v-btn text="Cerrar" @click="isActive.value = false" />
         </v-card-actions>
       </v-card>
     </template>

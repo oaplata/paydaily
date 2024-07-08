@@ -97,9 +97,12 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { getAllClients } from "@/api/clients";
 import { getAllUsers } from "@/api/users";
 import { getRoutesByClientId } from "@/api/routes";
-import { createLoan } from "@/api/loans";
+import { createLoan, getLoanById, updateLoan } from "@/api/loans";
 import { currentCompany } from "@/composables/useCurrentCompany";
 import router from "@/router";
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
 
 const formRef = ref();
 
@@ -122,12 +125,12 @@ const current = ref({
 
 const rules = {
   amount: [(v) => !!v || 'El monto es requerido'],
-  cardNumber: [(v) => !!v || 'El numero de tarjeta es requerido'],
+  cardNumber: [],
   term: [(v) => !!v || 'El plazo es requerido'],
   interest: [(v) => !!v || 'El interes es requerido'],
   feeValue: [(v) => !!v || 'El valor de la cuota es requerido'],
   client: [(v) => !!v || 'El cliente es requerido'],
-  lender: [(v) => !!v || 'El prestamista es requerido'],
+  lender: [],
   collector: [(v) => !!v || 'El cobrador es requerido'],
 };
 
@@ -154,13 +157,32 @@ const save = async () => {
 
   loading.value = true;
 
-  await createLoan({ companyId: currentCompany.value.id, loan: current.value })
+  if (route.name === 'loans-edit') {
+    const amount = +current.value.amount;
+    const charged = +current.value.charged;
+    const remaining = +current.value.remaining;
+
+    if (!charged) current.value.charged = 0;
+    if (!remaining) current.value.remaining = amount;
+
+    if (charged && remaining) {
+      current.value.remaining = amount - charged;
+    }
+
+    await updateLoan({ companyId: currentCompany.value.id, loan: current.value, loanId: route.params.id })
+  } else {
+    await createLoan({ companyId: currentCompany.value.id, loan: current.value })
+  }
+
   loading.value = false;
 
   router.push({ name: 'routes' });
 };
 
 onMounted(() => {
+  if (route.name === 'loans-edit') {
+    getLoanById({ companyId: currentCompany.value.id, loanId: route.params.id }).then(data => current.value = data)
+  }
   getAllClients({ companyId: currentCompany.value.id }).then(data => clients.value = data);
   getAllUsers(currentCompany.value.id).then(data => users.value = data);
 });
