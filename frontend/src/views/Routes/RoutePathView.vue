@@ -5,18 +5,21 @@
     <p class="my-2">Cuidad: {{ routeCity }}</p>
     <v-divider></v-divider>
     <p class="my-2">Cobrador: {{ routeDebtCollector }}</p>
+    <template v-if="['admin', 'super_admin'].includes(currentUser.rol)">
+      <v-divider></v-divider>
+      <p class="my-2">
+        Prestado: {{ loanValueOnRoute }}
+      </p>
+      <v-divider></v-divider>
+      <p class="my-2">
+        Cobrado: {{ chargeValueOnRoute }}
+      </p>
+      <v-divider></v-divider>
+      <p class="my-2">
+        Pendiente: {{ remainingValueOnRoute }}
+      </p>
+    </template>
     <v-divider></v-divider>
-    <p class="my-2">
-      Prestado: {{ loanValueOnRoute }}
-    </p>
-    <v-divider></v-divider>
-    <p class="my-2">
-      Cobrado: {{ chargeValueOnRoute }}
-    </p>
-    <v-divider></v-divider>
-    <p class="my-2">
-      Pendiente: {{ remainingValueOnRoute }}
-    </p>
     <p class="my-2">
       Saldo: {{ formattedBalance }}
       <v-dialog max-width="500">
