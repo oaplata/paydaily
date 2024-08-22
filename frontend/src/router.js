@@ -133,6 +133,11 @@ const routes = [
         name: "loans-edit",
         component: () => import("@/views/Loans/LoanFormView.vue"),
       },
+      {
+        path: "accounting",
+        name: "accounting",
+        component: () => import("@/views/Accounting/AccountingView.vue"),
+      },
       // {
       //   path: 'load',
       //   name: 'load',

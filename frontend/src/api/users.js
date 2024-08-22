@@ -129,4 +129,24 @@ export const getUserBalanceToday = async ({ userId }) => {
   return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 };
 
+export const getUsersByCity = async ({ companyId, city }) => {
+  const usersQuery = query(usersCol, where("companies", "array-contains", companyId), where("city", "==", city), where("isDeleted", "==", false));
+  const usersQuerySnapshot = await getDocs(usersQuery);
+  const users = usersQuerySnapshot.docs.map((doc) => ({
+    ...doc.data(),
+  }));
+  return users;
+}
+
+
+export const getUserBalance = async ({ userId, startDate, endDate }) => {
+  const col = getUsersBalanceCol(userId);
+  const querySnapshot = await getDocs(query(col,
+    where("createdAt", ">=", Timestamp.fromDate(startDate)),
+    where("createdAt", "<=", Timestamp.fromDate(endDate)),
+    where("isDeleted", "==", false)
+  ));
+  return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+}
+
 
