@@ -55,6 +55,13 @@
         value="Prestamos"
         :to="{ name: 'loans' }"
       ></v-list-item>
+      <v-list-item
+        v-if="currentUser && currentCompany && [UserRol.SUPER_ADMIN, UserRol.ADMIN].includes(currentUser.rol)"
+        prepend-icon="mdi-cash-multiple"
+        title="Contabilidad"
+        value="Contabilidad"
+        :to="{ name: 'accounting' }"
+      ></v-list-item>
       <!-- <v-list-item
         v-if="currentUser && [UserRol.SUPER_ADMIN, UserRol.ADMIN].includes(currentUser.rol) && currentBusiness"
         prepend-icon="mdi-account-group"
