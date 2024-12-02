@@ -100,7 +100,7 @@
                     </td>
                     <td>
                       {{ formatedCurrency(fee.value) }}
-                      <v-dialog max-width="500" v-if="['admin', 'super_admin'].includes(currentUser.rol)">
+                      <v-dialog max-width="500" v-if="currentUser && ['admin', 'super_admin'].includes(currentUser && currentUser.rol)">
                         <template v-slot:activator="{ props: activatorProps }">
                           <v-btn
                             v-bind="activatorProps"
@@ -162,7 +162,7 @@
 
 
         <v-card-actions>
-          <v-btn v-if="['admin', 'super_admin'].includes(currentUser.rol)" text="Editar" :to="{ name: 'loans-edit', params: { id: loan.id }}"/>
+          <v-btn v-if="currentUser && ['admin', 'super_admin'].includes(currentUser && currentUser.rol)" text="Editar" :to="{ name: 'loans-edit', params: { id: loan.id }}"/>
           <v-spacer></v-spacer>
           <v-btn text="Cerrar" @click="isActive.value = false" />
         </v-card-actions>

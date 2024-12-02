@@ -2,7 +2,7 @@
 <template>
   <div class="view">
     <h1 class="mb-2">Rutas</h1>
-    <v-btn v-if="['admin', 'super_admin'].includes(currentUser.rol)" :to="{ name: 'route-create' }" color="primary" class="mb-4">
+    <v-btn v-if="currentUser && ['admin', 'super_admin'].includes(currentUser && currentUser.rol)" :to="{ name: 'route-create' }" color="primary" class="mb-4">
       Nueva Ruta
     </v-btn>
     <v-card :loading="loading">
@@ -22,11 +22,11 @@
           <router-link
             class="mr-2"
             :to="{ name: 'route-edit', params: { id: getItemId(item) } }"
-            v-if="['admin', 'super_admin'].includes(currentUser.rol)"
+            v-if="currentUser && ['admin', 'super_admin'].includes(currentUser && currentUser.rol)"
           >
             <v-icon color="orange">mdi-pencil</v-icon>
           </router-link>
-          <v-dialog width="500" v-if="['admin', 'super_admin'].includes(currentUser.rol)">
+          <v-dialog width="500" v-if="currentUser && ['admin', 'super_admin'].includes(currentUser && currentUser.rol)">
             <template v-slot:activator="{ props }">
               <v-icon v-bind="props" color="red">mdi-trash-can</v-icon>
             </template>
@@ -109,7 +109,7 @@ const items = ref([]);
 const loading = ref(false);
 
 const displayItems = computed(() => {
-  if (['admin', 'super_admin'].includes(currentUser.value.rol)) return items.value;
+  if (currentUser.value && ['admin', 'super_admin'].includes(currentUser.value.rol)) return items.value;
   return items.value.filter((item) => item.debtCollector === currentUser.value.id);
 })
 

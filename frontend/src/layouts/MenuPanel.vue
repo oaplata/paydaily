@@ -28,7 +28,7 @@
         :to="{ name: 'companies' }"
       ></v-list-item>
       <v-list-item
-        v-if="currentUser && currentCompany && [UserRol.SUPER_ADMIN, UserRol.ADMIN].includes(currentUser.rol)"
+        v-if="currentUser && currentCompany && [UserRol.SUPER_ADMIN, UserRol.ADMIN].includes(currentUser && currentUser.rol)"
         prepend-icon="mdi-account-group"
         title="Clientes"
         value="Clientes"
@@ -49,21 +49,21 @@
         :to="{ name: 'routes' }"
       ></v-list-item>
       <v-list-item
-        v-if="currentUser && currentCompany && [UserRol.SUPER_ADMIN, UserRol.ADMIN].includes(currentUser.rol)"
+        v-if="currentUser && currentCompany && [UserRol.SUPER_ADMIN, UserRol.ADMIN].includes(currentUser && currentUser.rol)"
         prepend-icon="mdi-cash-multiple"
         title="Prestamos"
         value="Prestamos"
         :to="{ name: 'loans' }"
       ></v-list-item>
       <v-list-item
-        v-if="currentUser && currentCompany && [UserRol.SUPER_ADMIN, UserRol.ADMIN].includes(currentUser.rol)"
+        v-if="currentUser && currentCompany && [UserRol.SUPER_ADMIN, UserRol.ADMIN].includes(currentUser && currentUser.rol)"
         prepend-icon="mdi-cash-multiple"
         title="Contabilidad"
         value="Contabilidad"
         :to="{ name: 'accounting' }"
       ></v-list-item>
       <!-- <v-list-item
-        v-if="currentUser && [UserRol.SUPER_ADMIN, UserRol.ADMIN].includes(currentUser.rol) && currentBusiness"
+        v-if="currentUser && [UserRol.SUPER_ADMIN, UserRol.ADMIN].includes(currentUser && currentUser.rol) && currentBusiness"
         prepend-icon="mdi-account-group"
         title="Clientes"
         value="Clientes"

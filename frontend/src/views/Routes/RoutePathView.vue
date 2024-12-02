@@ -5,7 +5,7 @@
     <p class="my-2">Cuidad: {{ routeCity }}</p>
     <v-divider></v-divider>
     <p class="my-2">Cobrador: {{ routeDebtCollector }}</p>
-    <template v-if="['admin', 'super_admin'].includes(currentUser.rol)">
+    <template v-if="currentUser && ['admin', 'super_admin'].includes(currentUser && currentUser.rol)">
       <v-divider></v-divider>
       <p class="my-2">
         Prestado: {{ loanValueOnRoute }}
@@ -55,7 +55,7 @@
                         </td>
                         <td>
                           {{ b.description }}
-                          <v-dialog max-width="500" v-if="['admin', 'super_admin'].includes(currentUser.rol) && ['Calle', 'Rifa', 'Renovacion', 'Mora', 'Prestamo', 'Gasto', 'Efectivo'].includes(b.type)">
+                          <v-dialog max-width="500" v-if="currentUser && ['admin', 'super_admin'].includes(currentUser && currentUser.rol) && ['Calle', 'Rifa', 'Renovacion', 'Mora', 'Prestamo', 'Gasto', 'Efectivo'].includes(b.type)">
                             <template v-slot:activator="{ props: activatorProps }">
                               <v-btn
                                 v-bind="activatorProps"
@@ -91,7 +91,7 @@
                     </tbody>
                   </v-table>
                 </v-col>
-                <v-col cols="12" v-if="['admin', 'super_admin'].includes(currentUser.rol)">
+                <v-col cols="12" v-if="currentUser && ['admin', 'super_admin'].includes(currentUser && currentUser.rol)">
                   <v-text-field
                     label="Valor"
                     v-model="balanceTosave"

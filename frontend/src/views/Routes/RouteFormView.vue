@@ -45,7 +45,45 @@
           ></v-select>
         </v-col>
         <v-col cols="12">
-          <v-autocomplete
+          <v-dialog max-width="500">
+            <template v-slot:activator="{ props: activatorProps }">
+              <v-btn v-bind="activatorProps" block text="Agregar Cliente" color="green"></v-btn>
+            </template>
+            <template v-slot:default="{ isActive }">
+              <v-card>
+                <v-card-title>
+                  Buscar y Agregar Clientes
+                </v-card-title>
+
+                <v-card-text>
+                  <v-autocomplete
+                    label="Clientes"
+                    variant="outlined"
+                    :items="displayClients"
+                    v-model="selectedClient"
+                    item-title="name"
+                    item-value="id"
+                    :rules="rules.clients"
+                  ></v-autocomplete>
+                </v-card-text>
+
+
+
+                <v-card-actions>
+                  <v-btn text="Cerrar" @click="isActive.value = false" color="danger"/>
+                  <v-spacer></v-spacer>
+
+                  <v-btn
+                    v-if="selectedClient"
+                    text="Agregar"
+                    color="red"
+                    @click="current.clients.push(selectedClient); selectedClient = null; isActive.value = false"
+                  ></v-btn>
+                </v-card-actions>
+              </v-card>
+            </template>
+          </v-dialog>
+          <!-- <v-autocomplete
             label="Clientes"
             variant="outlined"
             :items="displayClients"
@@ -53,7 +91,7 @@
             item-title="name"
             item-value="id"
             multiple
-          ></v-autocomplete>
+          ></v-autocomplete> -->
         </v-col>
       </v-row>
       <v-divider class="my-4"></v-divider>
@@ -64,24 +102,13 @@
         >
           <div class="d-flex align-center">
             <div>
-              <v-btn
-                color="green-lighten-2"
-                icon="mdi-arrow-up-bold"
-                variant="text"
-                size="x-small"
-                :disabled="index === 0"
-                @click="changeClientPosition(index, -1)"
-              ></v-btn>
-              <v-btn
-                color="red-lighten-2"
-                icon="mdi-arrow-down-bold"
-                variant="text"
-                size="x-small"
-                :disabled="index === selectedClients.length - 1"
-                @click="changeClientPosition(index, 1)"
-              ></v-btn>
+              <change-client-index
+                :index="index + 1"
+                @changeIndex="changeClientPosition(index, $event)"
+                @deleteClient="deleteClient(index)"
+              ></change-client-index>
             </div>
-            <div>{{ client.name }} ({{ client.documentId }})</div>
+            <div class="text-capitalize">{{ client.name }} <br> ({{ client.documentId }})</div>
           </div>
         </v-list-item>
       </v-list>
@@ -104,6 +131,7 @@ import { getAllUsers } from "@/api/users";
 import router from "@/router";
 import { RouteState } from "@/types/Route";
 import { currentCompany } from "@/composables/useCurrentCompany";
+import ChangeClientIndex from "@/components/ChangeClientIndex.vue";
 
 const clients = ref([]);
 const users = ref([]);
@@ -116,6 +144,8 @@ const current = ref({
   debtCollector: "",
   clients: [],
 });
+
+const selectedClient = ref(null);
 
 const rules = ref({
   name: [(v) => !!v || "El nombre es requerido"],
@@ -149,8 +179,10 @@ const tittleView = computed(() => {
 const city = computed(() => current.value.city);
 const selectedClients = computed(() => current.value.clients.map((client) => clients.value.find((c) => c.id === client)));
 
+// eslint-disable-next-line no-unused-vars
 const displayClients = computed(() => clients.value
   .filter((client) => city.value === client.city)
+  .filter((client) => !current.value.clients.find((c) => c === client.id))
   .map((client) => ({
     name: `${client.name} - (${client.documentId})`,
     id: client.id,
@@ -176,16 +208,18 @@ const save = async () => {
   router.push({ name: "routes" });
 };
 
-const changeClientPosition = (index, direction) => {
-  const newIndex = index + direction;
+const changeClientPosition = (index, newIndex) => {
+  const clients = JSON.parse(JSON.stringify(current.value.clients));
+  const client = clients[index];
+  clients.splice(index, 1);
+  clients.splice(newIndex - 1, 0, client);
+  current.value.clients = clients;
+};
 
-  const temp = JSON.parse(JSON.stringify(current.value.clients));
-  const tempClient = temp[index];
-
-  temp[index] = temp[newIndex];
-  temp[newIndex] = tempClient;
-
-  current.value.clients = temp;
+const deleteClient = (index) => {
+  const clients = JSON.parse(JSON.stringify(current.value.clients));
+  clients.splice(index, 1);
+  current.value.clients = clients;
 };
 
 onMounted(() => {

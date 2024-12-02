@@ -152,10 +152,11 @@ const lenders = computed(() => users.value);
 const save = async () => {
   if (loading.value) return;
 
-  const { valid } = await formRef.value.validate();
-  if (!valid) return;
-
   loading.value = true;
+
+  const { valid } = await formRef.value.validate();
+  if (!valid) return loading.value = false;
+
 
   if (route.name === 'loans-edit') {
     const amount = +current.value.amount;
