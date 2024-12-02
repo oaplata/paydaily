@@ -160,14 +160,9 @@ const save = async () => {
   if (route.name === 'loans-edit') {
     const amount = +current.value.amount;
     const charged = +current.value.charged;
-    const remaining = +current.value.remaining;
 
     if (!charged) current.value.charged = 0;
-    if (!remaining) current.value.remaining = amount;
-
-    if (charged && remaining) {
-      current.value.remaining = amount - charged;
-    }
+    current.value.remaining = amount - charged;
 
     await updateLoan({ companyId: currentCompany.value.id, loan: current.value, loanId: route.params.id })
   } else {
