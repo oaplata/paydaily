@@ -1,5 +1,5 @@
 <template>
-  <v-dialog max-width="500" :disabled="!loan">
+  <v-dialog max-width="500" :disabled="!loan" v-if="showClient">
     <template v-slot:activator="{ props: activatorProps }">
       <v-card
         v-bind="activatorProps"
@@ -190,7 +190,7 @@ import { watch } from 'vue';
 import { ref } from 'vue';
 import { computed, onMounted, defineProps, defineEmits } from 'vue';
 
-const props = defineProps(["client", "route", "debtCollectorId"]);
+const props = defineProps(["client", "route", "debtCollectorId", "search"]);
 const emits = defineEmits(["getBalances", "update:loan-value", "update:charge-value", "update:remaining-value"]);
 
 const clientId = computed(() => props.client);
@@ -221,6 +221,11 @@ const loanDate = computed(() => formatedDate(loan.value?.createdAt));
 const loanCardNumber = computed(() => loan.value?.cardNumber);
 const loanCharged = computed(() => formatedCurrency(loan.value?.charged));
 const loanRemaining = computed(() => formatedCurrency(loan.value?.remaining));
+
+const showClient = computed(() => {
+  if (!props.search) return true;
+  return clientName.value.toLowerCase().includes(props.search.toLowerCase());
+});
 
 watch(loanAmount, () => {
   emits('update:loan-value', +loan.value?.amount || 0);

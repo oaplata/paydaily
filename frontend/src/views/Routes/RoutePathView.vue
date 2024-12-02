@@ -140,11 +140,16 @@
     <v-divider></v-divider>
     <h3 class="my-2">Clientes: </h3>
     <v-divider></v-divider>
+    <template v-if="currentUser && ['admin', 'super_admin'].includes(currentUser && currentUser.rol)">
+      <v-text-field placeholder="Buscar Cliente" v-model="search"></v-text-field>
+      <v-divider></v-divider>
+    </template>
     <template v-for="(client, index) of clients" :key="client">
       <ClientRouteComponent
         :client="client"
         :route="routeId"
         :debtCollectorId="routeDebtCollectorId"
+        :search="search"
         @update:loan-value="loanValues[index] = $event"
         @update:charge-value="chargeValues[index] = $event"
         @update:remaining-value="remainingValues[index] = $event"
@@ -175,6 +180,8 @@ const remainingValues = ref([]);
 const balanceTosave = ref(0);
 const balanceTypeToSave = ref('');
 const balanceDescriptionToSave = ref('');
+
+const search = ref('');
 
 const routeId = computed(() => route.value?.id);
 const routeName = computed(() => route.value?.name);
