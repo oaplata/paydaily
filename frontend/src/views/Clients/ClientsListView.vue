@@ -2,11 +2,18 @@
 <template>
   <div class="view">
     <h1 class="mb-2">Clientes</h1>
-    <v-btn :to="{ name: 'client-create' }" color="primary" class="mb-4"
-      >Nuevo Cliente</v-btn
-    >
+    <v-row>
+      <v-col cols="2" class="d-flex align-center">
+        <v-btn :to="{ name: 'client-create' }" color="primary" class="mb-4" block>
+          Nuevo Cliente
+        </v-btn>
+      </v-col>
+      <v-col cols="10">
+        <v-text-field placeholder="Buscar" v-model="search"></v-text-field>
+      </v-col>
+    </v-row>
     <v-card :loading="loading">
-      <v-data-table :items="clients" :headers="headers">
+      <v-data-table :items="renderClients" :headers="headers">
         <template v-slot:item.state="{ value }">
           <v-chip :color="getStateColor(value)">
             {{ getStateName(value) }}
@@ -63,7 +70,7 @@
   </div>
 </template>
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { getAllClients, deleteClient } from "@/api/clients";
 import { ClientState } from "@/types/Client";
 import { currentCompany } from "@/composables/useCurrentCompany";
@@ -111,6 +118,18 @@ const headers = [
 
 const clients = ref([]);
 const loading = ref(false);
+
+const search = ref("");
+
+const renderClients = computed(() => {
+  return clients.value.filter((client) => {
+    return (
+      search.value === "" ||
+      client.name.toLowerCase().includes(search.value.toLowerCase()) ||
+      client.documentId.toLowerCase().includes(search.value.toLowerCase())
+    );
+  });
+});
 
 const getItemId = (item) => item.id || "___";
 

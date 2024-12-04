@@ -67,7 +67,74 @@
         </v-col>
       </v-row>
       <v-row>
-        <v-col cols="12" md="2" offset-md="10">
+        <v-col cols="12" md="2" offset-md="8">
+          <v-dialog max-width="600">
+            <template v-slot:activator="{ props: activatorProps }">
+              <v-btn block color="primary" type="button" :loading="loading" v-bind="activatorProps">
+                Ver Creditos
+              </v-btn>
+            </template>
+
+            <template v-slot:default="{ isActive }">
+              <v-card :title="'Historial de creditos'">
+                <v-card-text>
+                  <v-card v-for="loan of clientLoans" :key="loan.id" class="mt-2">
+                    <v-card-title>
+                      <v-row>
+                        <v-col cols="8">
+                          <span>$ {{ formatedCurrencyFn(loan.amount) }}</span>
+                        </v-col>
+                        <v-col cols="4" class="text-right">
+                          <v-chip :color="getLoanStatusColor(loan.state)">
+                            {{ getLoanStatusText(loan.state) }}
+                          </v-chip>
+                        </v-col>
+                      </v-row>
+                    </v-card-title>
+                    <v-card-text>
+                      <span>{{ formatedDate(loan.createdAt) }}</span>
+                    </v-card-text>
+                    <v-card-text>
+                      <v-row>
+                        <v-col>
+                          <b>Cobrado: </b> <br>
+                          <span>${{ formatedCurrencyFn(loan.charged) }}</span>
+                        </v-col>
+                        <v-col>
+                          <b>Saldo: </b> <br>
+                          <span>${{ formatedCurrencyFn(loan.remaining) }}</span>
+                        </v-col>
+                        <v-col>
+                          <b>Ruta: </b> <br>
+                          <span>{{ users.find(u => u.id === loan.collector).name }}</span>
+                        </v-col>
+                      </v-row>
+                    </v-card-text>
+                    <v-card-actions v-if="loan.state === 'active'">
+                      <v-btn text :to="{ name: 'loans-edit', params: { id: loan.id }}">Editar</v-btn>
+                      <v-spacer></v-spacer>
+                      <v-btn text @click="cancellLoanFn(loan.id)">Cancelar</v-btn>
+                    </v-card-actions>
+                    <v-card-actions v-if="loan.state === 'cancelled'">
+                      <v-spacer></v-spacer>
+                      <v-btn text @click="activeLoanFn(loan.id)">Activar</v-btn>
+                    </v-card-actions>
+                  </v-card>
+                </v-card-text>
+
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+                  <v-btn
+                    text="Cerrar"
+                    @click="isActive.value = false"
+                  ></v-btn>
+                </v-card-actions>
+              </v-card>
+            </template>
+          </v-dialog>
+          
+        </v-col>
+        <v-col cols="12" md="2">
           <v-btn block color="primary" type="submit" :loading="loading">
             Guardar
           </v-btn>
@@ -84,6 +151,10 @@ import { getClientById, createClient, updateClient } from "@/api/clients";
 import router from "@/router";
 import { ClientState } from "@/types/Client";
 import { currentCompany } from "@/composables/useCurrentCompany";
+import { activeLoan, cancellLoan, getLoansByClient } from "@/api/loans";
+import { formatedCurrency } from "@/utils/currency";
+import { formatedDate } from "@/utils/date";
+import { getAllRoutes } from "@/api/routes";
 
 const clientForm = ref();
 
@@ -91,6 +162,35 @@ const currentClient = ref({
   state: ClientState.ACTIVE,
   name: "",
 });
+
+const clientLoans = ref([]);
+const users = ref([]);
+
+const getLoanStatusText = (status) => {
+  switch (status) {
+    case "active":
+      return "Activo";
+    case "paid":
+      return "Pagado";
+    case "cancelled":
+      return "Cancelado";
+    default:
+      return "Desconocido";
+  }
+};
+
+const getLoanStatusColor = (status) => {
+  switch (status) {
+    case "active":
+      return "info";
+    case "paid":
+      return "success";
+    case "cancelled":
+      return "error";
+    default:
+      return "grey";
+  }
+};
 
 const clientRules = ref({
   name: [(v) => !!v || "El nombre es requerido"],
@@ -139,10 +239,26 @@ const saveClient = async () => {
   router.push({ name: "clients" });
 };
 
+const cancellLoanFn = async (id) => {
+  await cancellLoan({ loanId: id, companyId: currentCompany.value.id });
+  clientLoans.value = await getLoansByClient({ clientId: currentClient.value.id, companyId: currentCompany.value.id });
+};
+
+const activeLoanFn = async (id) => {
+  await activeLoan({ loanId: id, companyId: currentCompany.value.id });
+  clientLoans.value = await getLoansByClient({ clientId: currentClient.value.id, companyId: currentCompany.value.id });
+};
+
+const formatedCurrencyFn = (value) => {
+  return formatedCurrency(value);
+};
+
 onMounted(async () => {
   const route = useRoute();
   if (route.name === "client-edit") {
     currentClient.value = await getClientById({ id: route.params.id, companyId: currentCompany.value.id });
+    clientLoans.value = await getLoansByClient({ clientId: currentClient.value.id, companyId: currentCompany.value.id });
+    users.value = await getAllRoutes({ companyId: currentCompany.value.id });
   }
 });
 </script>

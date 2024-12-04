@@ -113,3 +113,29 @@ export const getLoanFeesByDate = async ({ loanId, companyId, startDate, endDate 
 
   return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 };
+
+export const getLoansByClient = async ({ clientId, companyId }) => {
+  const col = getLoansCol(companyId);
+  const querySnapshot = await getDocs(query(col, where("client", "==", clientId)));
+  return querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+};
+
+export const cancellLoan = async ({ loanId, companyId }) => {
+  const col = getLoansCol(companyId);
+  const docRef = doc(col, loanId);
+
+  await setDoc(docRef, {
+    state: 'cancelled',
+    updatedAt: Timestamp.now(),
+  }, { merge: true });
+};
+
+export const activeLoan = async ({ loanId, companyId }) => {
+  const col = getLoansCol(companyId);
+  const docRef = doc(col, loanId);
+
+  await setDoc(docRef, {
+    state: 'active',
+    updatedAt: Timestamp.now(),
+  }, { merge: true });
+};
