@@ -113,11 +113,11 @@
                     <v-card-actions v-if="loan.state === 'active'">
                       <v-btn text :to="{ name: 'loans-edit', params: { id: loan.id }}">Editar</v-btn>
                       <v-spacer></v-spacer>
-                      <v-btn text @click="cancellLoanFn(loan.id)">Cancelar</v-btn>
+                      <v-btn text @click="showCancelConfirmation(loan.id)">Cancelar</v-btn>
                     </v-card-actions>
-                    <v-card-actions v-if="loan.state === 'cancelled'">
+                    <v-card-actions v-if="loan.state === 'cancelled' || loan.state === 'paid'">
                       <v-spacer></v-spacer>
-                      <v-btn text @click="activeLoanFn(loan.id)">Activar</v-btn>
+                      <v-btn text @click="showActivateConfirmation(loan.id)">Activar</v-btn>
                     </v-card-actions>
                   </v-card>
                 </v-card-text>
@@ -131,6 +131,48 @@
                 </v-card-actions>
               </v-card>
             </template>
+          </v-dialog>
+
+          <!-- Modal de confirmación para cancelar crédito -->
+          <v-dialog v-model="showCancelDialog" max-width="400">
+            <v-card>
+              <v-card-title class="text-h6">
+                Confirmar Cancelación
+              </v-card-title>
+              <v-card-text>
+                ¿Estás seguro de que deseas cancelar este crédito?.
+              </v-card-text>
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn text @click="showCancelDialog = false">
+                  No, mantener
+                </v-btn>
+                <v-btn color="error" @click="confirmCancelLoan" :loading="cancelLoading">
+                  Sí, cancelar
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+
+          <!-- Modal de confirmación para activar crédito -->
+          <v-dialog v-model="showActivateDialog" max-width="400">
+            <v-card>
+              <v-card-title class="text-h6">
+                Confirmar Activación
+              </v-card-title>
+              <v-card-text>
+                ¿Estás seguro de que deseas activar este crédito?.
+              </v-card-text>
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn text @click="showActivateDialog = false">
+                  No, mantener
+                </v-btn>
+                <v-btn color="success" @click="confirmActivateLoan" :loading="activateLoading">
+                  Sí, activar
+                </v-btn>
+              </v-card-actions>
+            </v-card>
           </v-dialog>
           
         </v-col>
@@ -165,6 +207,12 @@ const currentClient = ref({
 
 const clientLoans = ref([]);
 const users = ref([]);
+const showCancelDialog = ref(false);
+const cancelLoading = ref(false);
+const loanToCancel = ref(null);
+const showActivateDialog = ref(false);
+const activateLoading = ref(false);
+const loanToActivate = ref(null);
 
 const getLoanStatusText = (status) => {
   switch (status) {
@@ -239,14 +287,46 @@ const saveClient = async () => {
   router.push({ name: "clients" });
 };
 
-const cancellLoanFn = async (id) => {
-  await cancellLoan({ loanId: id, companyId: currentCompany.value.id });
-  clientLoans.value = await getLoansByClient({ clientId: currentClient.value.id, companyId: currentCompany.value.id });
+const showCancelConfirmation = (loanId) => {
+  loanToCancel.value = loanId;
+  showCancelDialog.value = true;
 };
 
-const activeLoanFn = async (id) => {
-  await activeLoan({ loanId: id, companyId: currentCompany.value.id });
-  clientLoans.value = await getLoansByClient({ clientId: currentClient.value.id, companyId: currentCompany.value.id });
+const confirmCancelLoan = async () => {
+  if (!loanToCancel.value) return;
+  
+  cancelLoading.value = true;
+  try {
+    await cancellLoan({ loanId: loanToCancel.value, companyId: currentCompany.value.id });
+    clientLoans.value = await getLoansByClient({ clientId: currentClient.value.id, companyId: currentCompany.value.id });
+    showCancelDialog.value = false;
+    loanToCancel.value = null;
+  } catch (error) {
+    console.error('Error al cancelar el crédito:', error);
+  } finally {
+    cancelLoading.value = false;
+  }
+};
+
+const showActivateConfirmation = (loanId) => {
+  loanToActivate.value = loanId;
+  showActivateDialog.value = true;
+};
+
+const confirmActivateLoan = async () => {
+  if (!loanToActivate.value) return;
+  
+  activateLoading.value = true;
+  try {
+    await activeLoan({ loanId: loanToActivate.value, companyId: currentCompany.value.id });
+    clientLoans.value = await getLoansByClient({ clientId: currentClient.value.id, companyId: currentCompany.value.id });
+    showActivateDialog.value = false;
+    loanToActivate.value = null;
+  } catch (error) {
+    console.error('Error al activar el crédito:', error);
+  } finally {
+    activateLoading.value = false;
+  }
 };
 
 const formatedCurrencyFn = (value) => {
