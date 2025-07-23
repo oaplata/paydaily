@@ -1,6 +1,35 @@
 <template>
   <div>
-    <h2>Ruta {{ routeName }}</h2>
+    <!-- Overlay de carga general -->
+    <!-- <v-overlay
+      v-model="loading"
+      class="align-center justify-center"
+      persistent
+    >
+      <v-card class="pa-4">
+        <v-card-text class="text-center">
+          <v-progress-circular
+            indeterminate
+            color="primary"
+            size="64"
+          ></v-progress-circular>
+          <div class="mt-4">
+            <p class="text-h6">Cargando datos de la ruta...</p>
+          </div>
+        </v-card-text>
+      </v-card>
+    </v-overlay> -->
+
+    <div class="d-flex align-center justify-space-between">
+      <h2>Ruta {{ routeName }}</h2>
+      <v-btn
+        color="primary"
+        icon="mdi-refresh"
+        @click="refreshRoute"
+        :loading="loading"
+        title="Refrescar datos"
+      ></v-btn>
+    </div>
     <v-divider></v-divider>
     <p class="my-2">Cuidad: {{ routeCity }}</p>
     <v-divider></v-divider>
@@ -144,7 +173,7 @@
       <v-text-field placeholder="Buscar Cliente" v-model="search"></v-text-field>
       <v-divider></v-divider>
     </template>
-    <template v-for="(client, index) of clients" :key="client">
+    <template v-for="(client, index) of clients" :key="`${client}-${refreshKey}`">
       <ClientRouteComponent
         :client="client"
         :route="routeId"
@@ -170,8 +199,11 @@ import ClientRouteComponent from "@/components/ClientRouteComponent.vue";
 import { formatedCurrency } from "@/utils/currency";
 import { currentUser } from "@/composables/useUser";
 
+const routeParams = useRoute();
 const route = ref(null);
 const balances = ref([]);
+const loading = ref(false);
+const refreshKey = ref(0);
 
 const loanValues = ref([]);
 const chargeValues = ref([]);
@@ -233,14 +265,31 @@ const deleteBalance = async (balance) => {
   getBalances();
 };
 
+const refreshRoute = async () => {
+  loadRoute();
+};
+
+const loadRoute = async () => {
+  loading.value = true;
+  try {
+    const id = routeParams.params.id;
+    route.value = await getRouteById({ companyId: currentCompany.value.id, id });
+    route.value.debtCollector = await getUserById(route.value.debtCollector);
+    loanValues.value = new Array(route.value.clients.length).fill(0);
+    chargeValues.value = new Array(route.value.clients.length).fill(0);
+    remainingValues.value = new Array(route.value.clients.length).fill(0);
+    await getBalances();
+    // Incrementar la key para forzar la re-renderización de los componentes hijos
+    refreshKey.value++;
+  } catch (error) {
+    console.error('Error al cargar la ruta:', error);
+  } finally {
+    loading.value = false;
+  }
+}
+
 onMounted(async () => {
-  const id = useRoute().params.id;
-  route.value = await getRouteById({ companyId: currentCompany.value.id, id });
-  route.value.debtCollector = await getUserById(route.value.debtCollector);
-  loanValues.value = new Array(route.value.clients.length).fill(0);
-  chargeValues.value = new Array(route.value.clients.length).fill(0);
-  remainingValues.value = new Array(route.value.clients.length).fill(0);
-  getBalances();
+  loadRoute();
   // route.value.clients = await Promise.all(route.value.clients.map((client) => getClientById({ companyId: currentCompany.value.id, id: client })));
 });
 

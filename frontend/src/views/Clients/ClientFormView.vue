@@ -106,7 +106,7 @@
                         </v-col>
                         <v-col>
                           <b>Ruta: </b> <br>
-                          <span>{{ users.find(u => u.id === loan.collector).name }}</span>
+                          <span>{{ users.find(u => u.id === loan.collector) && users.find(u => u.id === loan.collector).name }}</span>
                         </v-col>
                       </v-row>
                     </v-card-text>
