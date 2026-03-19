@@ -174,11 +174,10 @@
 import { getClientById } from '@/api/clients';
 import {
   getLoanByClientAndRoute,
-  addLoanFee,
-  updateLoan,
+  addLoanFeeAtomic,
   getLoanFees,
   getFeeById,
-  deleteLoanFee,
+  deleteLoanFeeAtomic,
   getLoanFeesByDate
 } from '@/api/loans';
 import { addUserBalance } from '@/api/users';
@@ -253,19 +252,20 @@ const getFees = async () => {
 const addFee = async () => {
   if (loadingAddFee.value) return;
   loadingAddFee.value = true;
-  const { id: feeId } = await addLoanFee({ companyId: currentCompany.value.id, loanId: loan.value.id, value: feeToPay.value });
-  loan.value.charged = Number(loan.value.charged) + Number(feeToPay.value);
-  loan.value.remaining = Number(loan.value.remaining) - Number(feeToPay.value);
 
-  const fee = await getFeeById({ companyId: currentCompany.value.id, loanId: loan.value.id, feeId: feeId});
+  const result = await addLoanFeeAtomic({
+    companyId: currentCompany.value.id,
+    loanId: loan.value.id,
+    value: feeToPay.value
+  });
+
+  loan.value.charged = result.charged;
+  loan.value.remaining = result.remaining;
+  loan.value.state = result.state;
+
+  const fee = await getFeeById({ companyId: currentCompany.value.id, loanId: loan.value.id, feeId: result.id });
   fees.value.push(fee);
   fees.value = fees.value.sort((a, b) => new Date(b.createdAt.seconds * 1000 + b.createdAt.nanoseconds / 1000000) - new Date(a.createdAt.seconds * 1000 + a.createdAt.nanoseconds / 1000000));
-
-  await updateLoan({ companyId: currentCompany.value.id, loanId: loan.value.id, loan: {
-    charged: loan.value.charged,
-    remaining: loan.value.remaining,
-    state: loan.value.remaining === 0 ? 'paid' : 'active'
-  }});
 
   await addUserBalance({
     companyId: currentCompany.value.id,
@@ -282,16 +282,17 @@ const addFee = async () => {
 }
 
 const deleteFee = async (fee) => {
-  await deleteLoanFee({ companyId: currentCompany.value.id, loanId: loan.value.id, feeId: fee.id})
-  loan.value.charged = Number(loan.value.charged) - Number(fee.value);
-  loan.value.remaining = Number(loan.value.remaining) + Number(fee.value);
-  loan.value.state = loan.value.remaining === 0 ? 'paid' : 'active';
+  const result = await deleteLoanFeeAtomic({
+    companyId: currentCompany.value.id,
+    loanId: loan.value.id,
+    feeId: fee.id,
+    feeValue: fee.value
+  });
+
+  loan.value.charged = result.charged;
+  loan.value.remaining = result.remaining;
+  loan.value.state = result.state;
   fees.value = fees.value.filter((f) => f.id !== fee.id);
-  await updateLoan({ companyId: currentCompany.value.id, loanId: loan.value.id, loan: {
-    charged: loan.value.charged,
-    remaining: loan.value.remaining,
-    state: loan.value.state
-  }});
 
   await addUserBalance({
     companyId: currentCompany.value.id,

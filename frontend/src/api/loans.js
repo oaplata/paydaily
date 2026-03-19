@@ -9,6 +9,7 @@ import {
   query,
   setDoc,
   where,
+  runTransaction,
 } from "firebase/firestore";
 import useFirestore from "@/composables/useFirestore";
 
@@ -138,4 +139,64 @@ export const activeLoan = async ({ loanId, companyId }) => {
     state: 'active',
     updatedAt: Timestamp.now(),
   }, { merge: true });
+};
+
+export const addLoanFeeAtomic = async ({ loanId, value, companyId }) => {
+  const loanRef = doc(getLoansCol(companyId), loanId);
+  const feeRef = doc(getLoanFeesCol(companyId, loanId));
+
+  return await runTransaction(firebaseFirestore, async (transaction) => {
+    const loanSnap = await transaction.get(loanRef);
+    if (!loanSnap.exists()) throw new Error("Loan does not exist");
+
+    const loanData = loanSnap.data();
+    const numValue = Number(value);
+    const newCharged = Number(loanData.charged) + numValue;
+    const newRemaining = Number(loanData.amount) - newCharged;
+    const newState = newRemaining <= 0 ? 'paid' : 'active';
+
+    transaction.set(feeRef, {
+      id: feeRef.id,
+      value: numValue,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+      isDeleted: false,
+    });
+
+    transaction.update(loanRef, {
+      charged: newCharged,
+      remaining: newRemaining,
+      state: newState,
+      updatedAt: Timestamp.now(),
+    });
+
+    return { id: feeRef.id, charged: newCharged, remaining: newRemaining, state: newState };
+  });
+};
+
+export const deleteLoanFeeAtomic = async ({ loanId, feeId, feeValue, companyId }) => {
+  const loanRef = doc(getLoansCol(companyId), loanId);
+  const feeRef = doc(getLoanFeesCol(companyId, loanId), feeId);
+
+  return await runTransaction(firebaseFirestore, async (transaction) => {
+    const loanSnap = await transaction.get(loanRef);
+    if (!loanSnap.exists()) throw new Error("Loan does not exist");
+
+    const loanData = loanSnap.data();
+    const numValue = Number(feeValue);
+    const newCharged = Number(loanData.charged) - numValue;
+    const newRemaining = Number(loanData.amount) - newCharged;
+    const newState = newRemaining <= 0 ? 'paid' : 'active';
+
+    transaction.delete(feeRef);
+
+    transaction.update(loanRef, {
+      charged: newCharged,
+      remaining: newRemaining,
+      state: newState,
+      updatedAt: Timestamp.now(),
+    });
+
+    return { charged: newCharged, remaining: newRemaining, state: newState };
+  });
 };
